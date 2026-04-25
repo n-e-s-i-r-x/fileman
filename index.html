@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CLOUDROP — Personal File Cloud</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Sans:wght@400;500;600&family=Instrument+Mono&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #05050a;
+  --card: #0d0d15;
+  --border: #1a1a28;
+  --glow: #4f8fff;
+  --glow2: #bf5fff;
+  --text: #dde0ff;
+  --muted: #4a4a70;
+  --success: #3fffa2;
+  --error: #ff5f7a;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  --font-mono: 'Instrument Mono', monospace;
+}
+
+html, body { min-height: 100vh; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+/* Ambient glow bg */
+body::before {
+  content: '';
+  position: fixed;
+  top: -30vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 60vh;
+  background: radial-gradient(ellipse, rgba(79,143,255,0.07) 0%, rgba(191,95,255,0.05) 50%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 8rem;
+}
+
+/* Header */
+header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.logo {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 10vw, 6rem);
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, var(--glow) 0%, var(--glow2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.tagline {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: #252535; }
+
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+}
+
+/* Drop zone */
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.dropzone.drag-over {
+  border-color: var(--glow);
+  background: rgba(79,143,255,0.04);
+}
+.dropzone:hover {
+  border-color: #2a2a45;
+}
+
+.drop-orb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(79,143,255,0.15), rgba(191,95,255,0.15));
+  border: 1px solid rgba(79,143,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1.25rem;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.dropzone:hover .drop-orb { transform: scale(1.1) translateY(-3px); }
+
+.drop-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+.drop-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+input[type="file"] { display: none; }
+
+/* Progress */
+.progress-area { display: none; margin-top: 1rem; }
+.progress-area.show { display: block; }
+.progress-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.prog-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--glow), var(--glow2));
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.25s ease;
+}
+
+/* Action row */
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.file-badge {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s;
+}
+.file-badge.active { color: var(--glow); border-color: rgba(79,143,255,0.3); }
+
+/* Buttons */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.4rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--glow), var(--glow2));
+  color: #fff;
+  box-shadow: 0 0 20px rgba(79,143,255,0.25);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(79,143,255,0.35); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-ghost:hover { border-color: var(--glow); color: var(--glow); }
+
+/* Files table */
+.files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.files-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.file-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  animation: rowFade 0.3s ease;
+  transition: border-color 0.15s;
+}
+.file-row:hover { border-color: #252535; }
+@keyframes rowFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.f-icon { font-size: 1.3rem; }
+.f-info { min-width: 0; }
+.f-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.f-meta {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  white-space: nowrap;
+}
+.chip-dl {
+  background: rgba(79,143,255,0.1);
+  border: 1px solid rgba(79,143,255,0.25);
+  color: var(--glow);
+  text-decoration: none;
+  display: inline-block;
+}
+.chip-dl:hover { background: rgba(79,143,255,0.2); }
+.chip-copy {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.chip-copy:hover { border-color: var(--glow2); color: var(--glow2); }
+.chip-copy.copied { border-color: var(--success); color: var(--success); }
+
+.empty {
+  text-align: center;
+  padding: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.8rem 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  z-index: 100;
+  white-space: nowrap;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  backdrop-filter: blur(12px);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.ok { border-color: rgba(63,255,162,0.4); color: var(--success); }
+.toast.err { border-color: rgba(255,95,122,0.4); color: var(--error); }
+
+/* Setup guide */
+.guide { margin-top: 3rem; }
+.guide-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+  background: linear-gradient(90deg, var(--text), var(--muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1.5rem;
+}
+
+.step-list { display: flex; flex-direction: column; gap: 1rem; }
+
+.step {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+.step-n {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(79,143,255,0.2), rgba(191,95,255,0.2));
+  border: 1px solid rgba(79,143,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--glow);
+  flex-shrink: 0;
+}
+.step-body {}
+.step-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; }
+.step-desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.7;
+  font-family: var(--font-mono);
+}
+.step-desc a { color: var(--glow); text-decoration: none; }
+.step-desc a:hover { text-decoration: underline; }
+.step-desc code {
+  background: rgba(79,143,255,0.1);
+  border: 1px solid rgba(79,143,255,0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--glow);
+}
+.step-desc pre {
+  background: #0a0a12;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.85rem;
+  margin-top: 0.6rem;
+  overflow-x: auto;
+  color: #7dff9a;
+  font-size: 0.68rem;
+  line-height: 1.8;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 500px) {
+  .file-row { grid-template-columns: auto 1fr; }
+  .chip-dl, .chip-copy { font-size: 0.58rem; padding: 0.25rem 0.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">CLOUDROP</div>
+    <div class="tagline">Your personal file cloud · powered by UploadThing</div>
+  </header>
+
+  <!-- Upload card -->
+  <div class="card">
+    <div class="card-label">Upload</div>
+
+    <div class="dropzone" id="dropzone"
+      onclick="document.getElementById('fileInput').click()"
+      ondragover="ev(event,'drag-over',1)"
+      ondragleave="ev(event,'drag-over',0)"
+      ondrop="onDrop(event)">
+      <div class="drop-orb" id="dropOrb">📤</div>
+      <div class="drop-title">Drop file here</div>
+      <div class="drop-sub">or click to browse · any format · 2 GB free</div>
+    </div>
+    <input type="file" id="fileInput" onchange="onPick(this)"/>
+
+    <div class="progress-area" id="progArea">
+      <div class="progress-top">
+        <span id="progLabel">Uploading…</span>
+        <span id="progPct">0%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+
+    <div class="action-row">
+      <div class="file-badge" id="fileBadge">No file selected</div>
+      <button class="btn btn-primary" id="uploadBtn" onclick="doUpload()" disabled>Upload ↑</button>
+    </div>
+  </div>
+
+  <!-- Files card -->
+  <div class="card">
+    <div class="files-header">
+      <div class="card-label" style="margin:0">Your Files</div>
+      <button class="btn btn-ghost" style="padding:0.35rem 0.9rem;font-size:0.68rem;" onclick="loadFiles()">↻ Refresh</button>
+    </div>
+    <div class="files-list" id="filesList">
+      <div class="empty">Loading your files…</div>
+    </div>
+  </div>
+
+  <!-- Setup Guide -->
+  <div class="guide">
+    <div class="guide-title">Setup Guide</div>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-n">1</div>
+        <div class="step-body">
+          <div class="step-title">Create free UploadThing account</div>
+          <div class="step-desc">Go to <a href="https://uploadthing.com" target="_blank">uploadthing.com</a> → sign in with GitHub → click <strong>Create App</strong>. Name it anything. Then go to <strong>API Keys</strong> tab and copy your secret key.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">2</div>
+        <div class="step-body">
+          <div class="step-title">Deploy to Vercel (free, 1 click)</div>
+          <div class="step-desc">
+            Push these 3 files to a GitHub repo, then import it on <a href="https://vercel.com" target="_blank">vercel.com</a>. Add one environment variable:
+            <pre>UPLOADTHING_TOKEN=your_token_here</pre>
+            That's it. Vercel gives you a free <code>*.vercel.app</code> URL.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">3</div>
+        <div class="step-body">
+          <div class="step-title">File structure in your repo</div>
+          <div class="step-desc">
+            <pre>your-project/
+├── index.html       ← this file
+├── api/
+│   ├── upload.js    ← serverless: get presigned URL
+│   └── files.js     ← serverless: list your files
+└── vercel.json      ← routing config</pre>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">4</div>
+        <div class="step-body">
+          <div class="step-title">Done — open your Vercel URL and upload!</div>
+          <div class="step-desc">Free tier: <strong>2 GB storage</strong>, unlimited downloads, files on CDN. No dashboard needed after setup. Share any download link — it works forever.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>CLOUDROP · Free Forever · Powered by UploadThing + Vercel</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let chosen = null;
+
+// ── Drag & Drop ──────────────────────────────────────────────────────────────
+function ev(e, cls, add) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList[add ? 'add' : 'remove'](cls);
+}
+function onDrop(e) {
+  e.preventDefault();
+  ev(e, 'drag-over', false);
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+}
+function onPick(input) { if (input.files[0]) setFile(input.files[0]); }
+
+function setFile(f) {
+  chosen = f;
+  const b = document.getElementById('fileBadge');
+  b.textContent = f.name + '  (' + fmtSize(f.size) + ')';
+  b.classList.add('active');
+  document.getElementById('uploadBtn').disabled = false;
+  document.getElementById('dropOrb').textContent = emoji(f.name);
+}
+
+// ── Upload ───────────────────────────────────────────────────────────────────
+async function doUpload() {
+  if (!chosen) return;
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+  showProg(true, chosen.name);
+
+  try {
+    // Step 1: get presigned URL from our Vercel function
+    const res = await fetch('/api/upload?filename=' + encodeURIComponent(chosen.name) + '&type=' + encodeURIComponent(chosen.type || 'application/octet-stream'));
+    if (!res.ok) throw new Error(await res.text());
+    const { presignedUrl, fileUrl } = await res.json();
+
+    // Step 2: PUT file directly to UploadThing storage
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', presignedUrl);
+      xhr.setRequestHeader('Content-Type', chosen.type || 'application/octet-stream');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setProg(Math.round(e.loaded / e.total * 100));
+      };
+      xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error('PUT failed: ' + xhr.status));
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(chosen);
+    });
+
+    // Save file record via our API
+    await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: chosen.name, size: chosen.size, url: fileUrl })
+    });
+
+    toast('✓ ' + chosen.name + ' uploaded!', 'ok');
+    resetUploadUI();
+    setTimeout(loadFiles, 800);
+  } catch(e) {
+    toast('Upload failed: ' + e.message, 'err');
+    showProg(false);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Upload ↑';
+}
+
+function resetUploadUI() {
+  chosen = null;
+  document.getElementById('fileBadge').textContent = 'No file selected';
+  document.getElementById('fileBadge').classList.remove('active');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('dropOrb').textContent = '📤';
+  document.getElementById('uploadBtn').disabled = true;
+  setProg(100);
+  setTimeout(() => showProg(false), 600);
+}
+
+// ── List files ───────────────────────────────────────────────────────────────
+async function loadFiles() {
+  try {
+    const res = await fetch('/api/files');
+    if (!res.ok) throw new Error(await res.text());
+    const { files } = await res.json();
+    renderFiles(files || []);
+  } catch(e) {
+    document.getElementById('filesList').innerHTML = '<div class="empty">Could not load files — deploy to Vercel first</div>';
+  }
+}
+
+function renderFiles(files) {
+  const el = document.getElementById('filesList');
+  if (!files.length) {
+    el.innerHTML = '<div class="empty">No files yet — upload something!</div>';
+    return;
+  }
+  el.innerHTML = files.map(f => `
+    <div class="file-row">
+      <span class="f-icon">${emoji(f.name)}</span>
+      <div class="f-info">
+        <div class="f-name" title="${f.name}">${f.name}</div>
+        <div class="f-meta">${fmtSize(f.size)} · ${fmtDate(f.uploadedAt)}</div>
+      </div>
+      <a class="chip chip-dl" href="${f.url}" target="_blank">↓ Download</a>
+      <button class="chip chip-copy" onclick="copyUrl('${f.url}', this)">Copy Link</button>
+    </div>
+  `).join('');
+}
+
+function copyUrl(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Link'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── Progress ─────────────────────────────────────────────────────────────────
+function showProg(show, name = '') {
+  document.getElementById('progArea').className = 'progress-area' + (show ? ' show' : '');
+  if (name) document.getElementById('progLabel').textContent = 'Uploading ' + name + '…';
+  if (!show) setProg(0);
+}
+function setProg(pct) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = pct + '%';
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmtSize(b) {
+  if (!b) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function emoji(name) {
+  const e = name.split('.').pop()?.toLowerCase();
+  return { pdf:'📄',jpg:'🖼',jpeg:'🖼',png:'🖼',gif:'🖼',webp:'🖼',svg:'🎨',mp4:'🎬',mov:'🎬',mp3:'🎵',wav:'🎵',zip:'📦',rar:'📦',gz:'📦',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',txt:'📃',md:'📃',js:'⚙️',py:'🐍',html:'🌐' }[e] || '📁';
+}
+
+let toastT;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.className = 'toast', 3200);
+}
+
+// Load files on start
+loadFiles();
+</script>
+</body>
+</html>
