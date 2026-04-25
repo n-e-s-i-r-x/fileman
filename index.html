@@ -538,29 +538,22 @@ async function doUpload() {
   showProg(true, chosen.name);
 
   try {
-    // Step 1: get presigned URL from our Vercel function
-    const res = await fetch('/api/upload?filename=' + encodeURIComponent(chosen.name) + '&type=' + encodeURIComponent(chosen.type || 'application/octet-stream'));
-    if (!res.ok) throw new Error(await res.text());
-    const { presignedUrl, fileUrl } = await res.json();
+    // POST file as multipart/form-data to Vercel function → UploadThing
+    const formData = new FormData();
+    formData.append('file', chosen, chosen.name);
 
-    // Step 2: PUT file directly to UploadThing storage
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('PUT', presignedUrl);
-      xhr.setRequestHeader('Content-Type', chosen.type || 'application/octet-stream');
+      xhr.open('POST', '/api/upload');
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) setProg(Math.round(e.loaded / e.total * 100));
       };
-      xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error('PUT failed: ' + xhr.status));
+      xhr.onload = () => {
+        if (xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error(xhr.responseText));
+      };
       xhr.onerror = () => reject(new Error('Network error'));
-      xhr.send(chosen);
-    });
-
-    // Save file record via our API
-    await fetch('/api/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: chosen.name, size: chosen.size, url: fileUrl })
+      xhr.send(formData);
     });
 
     toast('✓ ' + chosen.name + ' uploaded!', 'ok');
