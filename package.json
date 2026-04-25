@@ -1,0 +1,11 @@
+{
+  "name": "cloudrop",
+  "version": "1.0.0",
+  "description": "Personal file cloud using UploadThing + Vercel",
+  "dependencies": {
+    "uploadthing": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
