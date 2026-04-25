@@ -3,11 +3,11 @@
 // GET  /api/upload?filename=x&type=y  → returns { presignedUrl, fileUrl }
 // POST /api/upload                    → saves file record to KV (Vercel KV or simple JSON store)
 
-import { UTApi } from 'uploadthing/server';
+const { UTApi } = require('uploadthing/server');
 
 const utapi = new UTApi();
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
