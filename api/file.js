@@ -1,6 +1,6 @@
-// api/files.js
+// api/file.js
 // Vercel Serverless Function — no npm dependencies, uses UploadThing REST API directly
-// GET /api/files → returns { files: [...] }
+// GET /api/file → returns { files: [...] }
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'UPLOADTHING_SECRET not set' });
 
   try {
-    const response = await fetch('https://uploadthing.com/api/listFiles', {
+    const response = await fetch('https://api.uploadthing.com/v6/listFiles', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -37,7 +37,6 @@ module.exports = async function handler(req, res) {
       uploadedAt: f.uploadedAt ? new Date(f.uploadedAt).toISOString() : null,
     }));
 
-    // Newest first
     files.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 
     return res.status(200).json({ files });
