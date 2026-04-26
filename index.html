@@ -470,7 +470,7 @@ footer {
           <div class="step-title">Deploy to Vercel (free, 1 click)</div>
           <div class="step-desc">
             Push these 3 files to a GitHub repo, then import it on <a href="https://vercel.com" target="_blank">vercel.com</a>. Add one environment variable:
-            <pre>UPLOADTHING_TOKEN=your_token_here</pre>
+            <pre>UPLOADTHING_SECRET=your_secret_key_here</pre>
             That's it. Vercel gives you a free <code>*.vercel.app</code> URL.
           </div>
         </div>
@@ -484,7 +484,7 @@ footer {
 ├── index.html       ← this file
 ├── api/
 │   ├── upload.js    ← serverless: get presigned URL
-│   └── files.js     ← serverless: list your files
+│   └── file.js      ← serverless: list your files
 └── vercel.json      ← routing config</pre>
           </div>
         </div>
@@ -581,7 +581,7 @@ function resetUploadUI() {
 // ── List files ───────────────────────────────────────────────────────────────
 async function loadFiles() {
   try {
-    const res = await fetch('/api/files');
+    const res = await fetch('/api/file');
     if (!res.ok) throw new Error(await res.text());
     const { files } = await res.json();
     renderFiles(files || []);
